@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8" />
+	<title>Meu Game Saiu Hoje</title>
+	<script src="phaser.min.js"></script>
+	<style type="text/css">
+		body {
+			margin: 0;
+		}
+	</style>
+</head>
+<body>
+	<script type="text/javascript">
+
+
+		var config = {
+			type: Phaser.AUTO,
+			width: 1280,
+			height: 600,
+
+			physics: {
+
+				default: 'arcade',
+
+				arcade: {
+					gravity: { y: 1000 },
+					debug: false
+				}
+
+			},
+
+			scene: {
+				preload: preload,
+				create: create,
+				update: update
+			}
+		};
+
+
+		//declaration of variables
+		var game = new Phaser.Game(config);
+		var player;
+		var platforms;
+		var cursors;
+		var rupias;
+		var score = 0;
+		var scoreText;
+        var bombs;
+        var gameOver = false;
+        
+
+
+		function preload() {
+			
+		//Adding files
+			this.load.image('sky', 'assets/sky.png');
+			this.load.image('ground', 'assets/platform.png');
+			this.load.image('rupia', 'assets/rupia.png');
+			this.load.image('bomb', 'assets/bomb.png');
+			this.load.spritesheet('zelda', 'assets/zelda.png', { frameWidth: 32, frameHeight: 48 });
+
+
+		}
+
+
+		function create() {
+            //add background
+			this.add.image(614, 300, 'sky');
+            //static collision for platform
+			platforms = this.physics.add.staticGroup(); 
+            
+
+			// Adding Platforms
+			platforms.create(185, 530, 'ground').setScale(1.3).refreshBody();
+			platforms.create(1280, 520, 'ground').setScale(1.3).refreshBody();
+			platforms.create(110, 165, 'ground');
+            platforms.create(320, 345, 'ground').setScale(1.3).refreshBody();
+            platforms.create(1000, 382, 'ground').setScale(1.3).refreshBody();
+			
+		
+		    //setting up player	
+			player = this.physics.add.sprite(50, 49, 'zelda'); //birth of the dude
+			player.setBounce(0.2);                           //dude weightkick
+			player.setCollideWorldBounds(false);            //collision against platforms
+			player.body.setGravityY(100);                //gravitity
+
+
+
+			//adding frames
+			this.anims.create({
+				key: 'left',
+				frames: this.anims.generateFrameNumbers('zelda', { start: 0, end: 3 }),
+				frameRate: 10,
+				repeat: -1
+			});
+			this.anims.create({
+				key: 'turn',
+				frames: [{ key: 'zelda', frame: 4 }],
+				framerate: 20
+			});
+			this.anims.create({
+				key: 'right',
+				frames: this.anims.generateFrameNumbers('zelda', { start: 5, end: 8 }),
+				frameRate: 10,
+				repeat: -1
+			});		
+
+			//add rupias an positions 	 
+			rupias = this.physics.add.group({
+				key: 'rupia',
+				repeat: 15,
+				setXY: { x: 18, y: 0, stepX: 70 }
+			});
+			//
+			rupias.children.iterate(function (child) {
+				child.setBounceY(Phaser.Math.FloatBetween(0.9, 1));
+			}); 
+			//add enimies    
+			bombs = this.physics.add.group();
+			cursors = this.input.keyboard.createCursorKeys();
+			//add physics and collision
+			this.physics.add.collider(player, platforms); 
+			this.physics.add.collider(rupias, platforms);
+			this.physics.add.overlap(player, rupias, collectStar, null, this);
+			this.physics.add.collider(bombs, platforms);
+            this.physics.add.collider(player, bombs, hitBomb, null, this);
+			//setting scoreboard
+			scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+
+		}
+        //adding command and speed pro player
+		function update() {
+
+			if (cursors.left.isDown) {
+				player.setVelocityX(-260);
+
+				player.anims.play('left', true);
+
+			}
+			else if (cursors.right.isDown) {
+				player.setVelocityX(260);
+
+				player.anims.play('right', true);
+			}
+			else {
+				player.setVelocityX(0);
+
+				player.anims.play('turn');
+			}
+			if (cursors.up.isDown && player.body.touching.down) {
+				player.setVelocityY(-800);
+
+			}
+
+		}
+		//collection function
+		function collectStar(player, rupia) {
+			
+			rupia.disableBody(true, true);
+		//	every rupee collection is added every 10 points
+			score = score + 10;
+			scoreText.setText('Score: ' + score);
+            if (rupias.countActive(true)===0){
+				rupias.children.iterate(function(child){
+					child.enableBody(true, child.x, 0, true, true);
+				});
+			}
+          
+		  var x = (player.x <400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+		  var bomb = bombs.create(x, 16, 'bomb');
+		  bomb.setBounce(1);
+		  bomb.setCollideWorldBounds(true);
+		  bomb.setVelocity(Phaser.Math.Between(-200, 200),20);
+          bomb.allowGravity = false;
+			
+		}
+        //when the character takes hit the bomb will be stopped and the color red
+
+		function hitBomb (player,bomb){
+			this.physics.pause();
+			player.setTint(0xff0000);
+			player.anims.play('turn');
+			gameOver = true;
+
+		}
+        
+		function gameOver(){gameOver = true;
+
+
+	</script>
+</body>
+</html>
